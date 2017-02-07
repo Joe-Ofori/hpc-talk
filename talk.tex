@@ -1,0 +1,212 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% file:    talk.Rnw
+% authors: Peter DeWitt, peter.dewitt@ucdenver.edu %
+% Talk to be given at the HPC Launch for Rosliand at UCD.
+%
+% This file is based on a template made avialble by
+% Copyright 2007 by Marco Barisione
+% Copyright 2011 by Henricus Bouwmeester
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[10pt]{beamer}
+%\usefonttheme{serif}
+\usepackage[T1]{fontenc}
+\usepackage{etex}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Set up the ucdDenver theme
+\newif\ifuseblack
+% for black theme, this should be
+%     \useblacktrue
+% for the white theme, this should be
+%     \useblackfalse
+\useblacktrue
+
+\usetheme[pageofpages=of,                    % String used between the current page and the
+                                             % total page count.
+          bullet=circle,                     % Use circles instead of squares for bullets.
+          titleline=true,                    % Show a line below the frame title.
+          showdate=true,                     % show the date on the title page
+          alternativetitlepage=true,         % Use the fancy title page.
+          titlepagelogo=./figure/CUAnschutz_c_clr, % Logo for the first page.
+          % Logo for the header on first page.
+          \ifuseblack
+             headerlogo=./figure/pubHealth_tt2_rgb_rv_tp.pdf,
+          \else
+             headerlogo=./figure/csph_biostatistics-v2.pdf,    % Logo for white background.
+          \fi
+          watermark=./figure/csph_biostatistics-v2,               % Watermark used in every page.
+          watermarkheight=50pt,              % Height of the watermark.
+          watermarkheightmult=6,             % The watermark image is 6 times bigger
+                                             % than watermarkheight.
+          ]{UCDenver}
+
+\ifuseblack
+   \usecolortheme{ucdblack}
+\else
+   \usecolortheme{ucdwhite}
+\fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Title Page Setup
+\author[Peter~E.~DeWitt]{Peter~E.~DeWitt, M.S., Ph.D. Candidate\\{peter.dewitt@ucdenver.edu}\vspace{0.25in}}
+\title[]{Statistical Methods Research:\\Running Simulations with R in a High Performance
+Computing Environment}
+\institute[CSPH, UCD, BIOS]{Colorado School of Public Health\\University of Colorado Denver\\Department of Biostatistics and Informatics}
+\date{14 Feburary 2017}
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document} 
+\watermarkoff
+
+\begin{frame}[t,plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}[t]
+  \frametitle{My Project}
+  \begin{itemize}
+    \item Working towards a Ph.D. in Biostatistics
+    \item Looking to explain the interaction between day-of-cycle, age, and time-to-menopause
+      observed in the changes to reproductive hormone profiles expressed during
+      the menopausal transition.
+    \item Aim 1: `Parsimonious B-Spline Regression Model via Control Polygon Reduction'
+    \item I've developed a novel method selection approach for enumeration and
+      placement of knots for B-splines.  
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[t]
+  \frametitle{Why I Needed A HPC}
+  \begin{itemize}
+    \item Simulations to show how CPR compared to
+      \begin{itemize}
+        \item A standard likelihood-based forward-step model selection approach,
+        \item A standard likelihood-based backward-step model selection apprach,
+        \item P-splines
+      \end{itemize}
+    \item Metrics:
+      \begin{itemize}
+        \item likelihood and/or Root Mean Squared Error by degrees of freedom,
+        \item computation time.
+      \end{itemize} 
+
+    \item Start with $L$ internal knots:
+      \begin{itemize}
+        \item CPR requires $L + 1$ regression fits,
+        \item Forward-step requires $L + 1$ regression fits,
+        \item Backward-step requires $L(L+1)/2 + 1$ regression fits,
+        \item P-splines requires $L + 1$ regressino fits.
+      \end{itemize}
+
+    \item For $L = 50$ a total of 1,429 regression models to fit.
+      
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[t]
+  \frametitle{Why I Needed A HPC}
+  \begin{itemize}
+    \item Moving Parts:
+      \begin{itemize}
+        \item Four functions.
+        \item Modeling under ordinary least squares and under mixed effect models.
+        \item Differing sample sizes, model, and subject specific errors.
+      \end{itemize}
+    \item 144 sets of initial conditions.
+    \item Required time to run the $1,429$ regression models for each set of
+      inputs: between 00:15 and 03:30.
+    \item 1,000 data sets to be generate for each set of initial conditions.  
+    \item $205,776,000$ total regression models to fit.
+    \item I need a lot of computing cores.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{My HPC Pipline}
+  \framesubtitle{Hardware, Software, Disk and RAM Usage}
+  \begin{itemize}
+    \item Hardware
+      \begin{itemize}
+        \item A lot of computation cores
+      \end{itemize}
+
+    \item Software
+      \begin{itemize}
+        \item SLURM
+        \item R
+        \item tar
+      \end{itemize}
+
+    \item RAM
+      \begin{itemize}
+        \item Less than 6 GB per core.
+        \item Low enough that the 128GB per Rosliand node was sufficient to
+          support 20 parallel simulations per node.
+      \end{itemize}
+
+    \item Disk Space
+      \begin{itemize}
+        \item Less than 2 GB, tarballs total 633 MB.
+        \item A lot of small files where generated.
+        \item Originally only had 50,000 inode limit on {\tt \$HOME} and
+          {\tt \$SCRATCH}, extended to 100,000 inode limit.
+      \end{itemize}
+  \end{itemize} 
+\end{frame}
+
+\begin{frame}[t]
+  \frametitle{Difficulties}
+  \begin{itemize}
+    \item Number of Files.
+      \begin{itemize} 
+        \item Solution: generate a controlled number of files and place into a
+          tarball for each set of initial conditions.
+      \end{itemize}
+
+    \item[]
+
+    \item Getting a Job to run to completion.
+      \begin{itemize}
+        \item Option 1: Request lots of nodes and cores.
+          \begin{itemize}
+            \item Use GNU parallel to manage the run.
+            \item Did not work well for me.
+            \item Queue time for resources was high.
+            \item Getting a good estimate for the time required to run the sim
+              was difficult. (More on this later.)
+          \end{itemize}
+        \item Option 2: Use SLURM Arrays to request a few resources many times.
+          \begin{itemize}
+            \item This worked well for me.
+            \item Lower queue time.
+            \item Leaves more resourse open for others.
+          \end{itemize}
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[t]
+  \frametitle{Estimating Time Need For An Iteration}
+  \begin{itemize}
+    \item Differences between my desktop and Rosliand
+      \begin{tabular}{lll}
+            & Rosliand                                  & My Desktop \\ \hline
+        OS  & Red Hat Enterprise 7.2                    & Debian 8.7 (jessie) \\
+        CPU & Intel(R) Xeon(R) E5-2680 v3 & Intel(R) Core(TM) i7-3770 \\
+        Speed & 2.50GHz & 3.40GHz \\
+        Linear Algebra Libraries & 
+        \\ \hline
+      \end{tabular}
+
+  \end{itemize}
+\end{frame}
+
+\end{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% End of file
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
