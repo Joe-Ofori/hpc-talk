@@ -71,10 +71,14 @@ Computing Environment}
   \frametitle{My Project}
   \begin{itemize}
     \item Working towards a Ph.D. in Biostatistics
-    \item Looking to explain the interaction between day-of-cycle, age, and time-to-menopause
+    \item[]
+    \item Explain the interaction between day-of-cycle, age, and time-to-menopause
       observed in the changes to reproductive hormone profiles expressed during
       the menopausal transition.
-    \item Aim 1: `Parsimonious B-Spline Regression Model via Control Polygon Reduction'
+    \item[]
+    \item Aim 1: Parsimonious B-Spline Regression Model via Control Polygon
+      Reduction (CPR)
+    \item[]
     \item I've developed a novel method selection approach for enumeration and
       placement of knots for B-splines.  
   \end{itemize}
@@ -89,11 +93,8 @@ Computing Environment}
         \item A standard likelihood-based backward-step model selection apprach,
         \item P-splines
       \end{itemize}
-    \item Metrics:
-      \begin{itemize}
-        \item likelihood and/or Root Mean Squared Error by degrees of freedom,
-        \item computation time.
-      \end{itemize} 
+
+    \item[]
 
     \item Start with $L$ internal knots:
       \begin{itemize}
@@ -103,6 +104,8 @@ Computing Environment}
         \item P-splines requires $L + 1$ regressino fits.
       \end{itemize}
 
+    \item[]
+
     \item For $L = 50$ a total of 1,429 regression models to fit.
       
   \end{itemize}
@@ -111,18 +114,21 @@ Computing Environment}
 \begin{frame}[t]
   \frametitle{Why I Needed A HPC}
   \begin{itemize}
-    \item Moving Parts:
+    \item Simulations:
       \begin{itemize}
         \item Four functions.
         \item Modeling under ordinary least squares and under mixed effect models.
         \item Differing sample sizes, model, and subject specific errors.
       \end{itemize}
+    \item[]
     \item 144 sets of initial conditions.
+    \item[]
     \item Required time to run the $1,429$ regression models for each set of
       inputs: between 00:15 and 03:30.
+    \item[]
     \item 1,000 data sets to be generate for each set of initial conditions.  
+    \item[]
     \item $205,776,000$ total regression models to fit.
-    \item I need a lot of computing cores.
   \end{itemize}
 \end{frame}
 
@@ -179,6 +185,7 @@ Computing Environment}
             \item Queue time for resources was high.
             \item Getting a good estimate for the time required to run the sim
               was difficult. (More on this later.)
+            \item[]
           \end{itemize}
         \item Option 2: Use SLURM Arrays to request a few resources many times.
           \begin{itemize}
@@ -192,17 +199,17 @@ Computing Environment}
 
 \begin{frame}[t]
   \frametitle{Estimating Time Need For An Iteration}
+  \small
   \begin{itemize}
     \item Differences between my desktop and Rosliand
-      \begin{tabular}{lll}
+      \begin{tabular}{p{0.75in}ll}
             & Rosliand                                  & My Desktop \\ \hline
         OS  & Red Hat Enterprise 7.2                    & Debian 8.7 (jessie) \\
         CPU & Intel(R) Xeon(R) E5-2680 v3 & Intel(R) Core(TM) i7-3770 \\
-        Speed & 2.50GHz & 3.40GHz \\
-        Linear Algebra Libraries & 
-        \\ \hline
-      \end{tabular}
+        Speed & 2.50GHz & 3.40GHz \\ \hline
+      \end{tabular} 
 
+    \item I have configured my desktop to use OpenBLAS for linear algebra.
   \end{itemize}
 \end{frame}
 
