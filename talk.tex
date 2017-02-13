@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % file:    talk.Rnw
 % authors: Peter DeWitt, peter.dewitt@ucdenver.edu %
-% Talk to be given at the HPC Launch for Rosliand at UCD.
+% Talk to be given at the HPC Launch for Rosalind at UCD.
 %
 % This file is based on a template made avialble by
 % Copyright 2007 by Marco Barisione
@@ -67,7 +67,7 @@ Computing Environment}
   \titlepage
 \end{frame}
 
-\begin{frame}[t]
+\begin{frame}
   \frametitle{My Project}
   \begin{itemize}
     \item Working towards a Ph.D. in Biostatistics
@@ -84,13 +84,13 @@ Computing Environment}
   \end{itemize}
 \end{frame}
 
-\begin{frame}[t]
+\begin{frame}
   \frametitle{Why I Needed A HPC}
   \begin{itemize}
-    \item Simulations to show how CPR compared to
+    \item Simulations to show how CPR compares to
       \begin{itemize}
         \item A standard likelihood-based forward-step model selection approach,
-        \item A standard likelihood-based backward-step model selection apprach,
+        \item A standard likelihood-based backward-step model selection approach,
         \item P-splines
       \end{itemize}
 
@@ -101,17 +101,18 @@ Computing Environment}
         \item CPR requires $L + 1$ regression fits,
         \item Forward-step requires $L + 1$ regression fits,
         \item Backward-step requires $L(L+1)/2 + 1$ regression fits,
-        \item P-splines requires $L + 1$ regressino fits.
+        \item P-splines requires $L + 1$ regression fits.
       \end{itemize}
 
     \item[]
 
-    \item For $L = 50$ a total of 1,429 regression models to fit.
+      % 3 * (80 + 1) + 80*81/2 + 1
+    \item For $L = 80$ a total of 3,484 regression models to fit.
       
   \end{itemize}
 \end{frame}
 
-\begin{frame}[t]
+\begin{frame}
   \frametitle{Why I Needed A HPC}
   \begin{itemize}
     \item Simulations:
@@ -126,15 +127,14 @@ Computing Environment}
     \item Required time to run the $1,429$ regression models for each set of
       inputs: between 00:15 and 03:30.
     \item[]
-    \item 1,000 data sets to be generate for each set of initial conditions.  
-    \item[]
-    \item $205,776,000$ total regression models to fit.
+      % 144 * 1000 * (3484)
+    \item $501,696,000$ total regression models to fit.
   \end{itemize}
 \end{frame}
 
 \begin{frame}
-  \frametitle{My HPC Pipline}
-  \framesubtitle{Hardware, Software, Disk and RAM Usage}
+  \frametitle{My HPC Pipeline}
+  \framesubtitle{Hardware, Software, RAM, and Disk Usage}
   \begin{itemize}
     \item Hardware
       \begin{itemize}
@@ -150,9 +150,7 @@ Computing Environment}
 
     \item RAM
       \begin{itemize}
-        \item Less than 6 GB per core.
-        \item Low enough that the 128GB per Rosliand node was sufficient to
-          support 20 parallel simulations per node.
+        \item Low enough that the 4GB per core was default sufficient.
       \end{itemize}
 
     \item Disk Space
@@ -165,7 +163,7 @@ Computing Environment}
   \end{itemize} 
 \end{frame}
 
-\begin{frame}[t]
+\begin{frame}
   \frametitle{Difficulties}
   \begin{itemize}
     \item Number of Files.
@@ -190,29 +188,176 @@ Computing Environment}
         \item Option 2: Use SLURM Arrays to request a few resources many times.
           \begin{itemize}
             \item This worked well for me.
-            \item Lower queue time.
-            \item Leaves more resourse open for others.
+            \item Less queue time.
+            \item Leaves more resource open for others.
           \end{itemize}
       \end{itemize}
   \end{itemize}
 \end{frame}
 
-\begin{frame}[t]
+\begin{frame}
   \frametitle{Estimating Time Need For An Iteration}
   \small
+  \vspace{-0.2in}
   \begin{itemize}
-    \item Differences between my desktop and Rosliand
+    \item Differences between my desktop and Rosalind
       \begin{tabular}{p{0.75in}ll}
-            & Rosliand                                  & My Desktop \\ \hline
+            & Rosalind                                  & My Desktop \\ \hline
         OS  & Red Hat Enterprise 7.2                    & Debian 8.7 (jessie) \\
         CPU & Intel(R) Xeon(R) E5-2680 v3 & Intel(R) Core(TM) i7-3770 \\
         Speed & 2.50GHz & 3.40GHz \\ \hline
       \end{tabular} 
 
     \item I have configured my desktop to use OpenBLAS for linear algebra.
+    \item[]
+    \item QR Decompositions is the biggest time consuming part of my work.
+    \item[]
+    \item Benchmarking on desktop was not helpful.
+    \item[]
+    \item My one wish for Rosalind: A Testing QOS.
   \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]
+  \frametitle{My Workflow}
+  \begin{itemize}
+    \item Three types of files
+      \begin{enumerate}
+        \item R scripts for generating one data set and running the sim.
+        \item bash script for submitting a job
+        \item bash script for submitting all jobs.
+      \end{enumerate}
+    \item[]
+    \item Examples follow.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Example R Script}
+  \small
+  \vspace{-0.2in}
+  \begin{verbatim}
+# file: doppler-lmer-sim.R
+# 
+# Five input args 
+# s obs_per_subject sigma_alpha sigma_epsilon outdir
+
+inparams <- commandArgs(trailingOnly = TRUE)
+
+# Build a data set
+# ....
+
+# Run the sim
+# ....
+
+# Save results 
+# ....
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Example Job Submission File}
+  \scriptsize
+  \vspace{-0.2in}
+\begin{verbatim}
+#!/bin/bash
+# file: doppler-lmer-sruns.sh
+
+#SBATCH --nodes 1
+#SBATCH --ntasks-per-node=20
+#SBATCH --cpus-per-task=1 
+
+if [ $# -ne 5 ]; then
+  echo "expected five arguments"
+  exit 1
+fi
+
+module load R
+
+mkdir -p $5
+mkdir -p $5/results
+mkdir -p $5/timers
+mkdir -p $5/logs
+
+Rscript --vanilla doppler-lme4-sim.R $1 $2 $3 $4 $5 > \
+  $5/logs/log.${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID} &
+# ... omitted lines ...
+Rscript --vanilla doppler-lme4-sim.R $1 $2 $3 $4 $5 > \
+  $5/logs/log.${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID} &
+wait
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Example Submit all Jobs}
+  \small
+\begin{verbatim}
+#!/bin/bash
+
+# submitjobs.sh
+
+sbatch --array=1-50 --time=01:00:00 --job-name=d2a \
+  doppler-lme4-sruns.sh 2   100 0.1 0.1 dop2-sa01-se01-n0100
+
+sbatch --array=1-50 --time=02:00:00 --job-name=d2b \
+  doppler-lme4-sruns.sh 2   500 0.1 0.1 dop2-sa01-se01-n0500
+
+sbatch --array=1-50 --time=04:00:00 --job-name=d2c \
+  doppler-lme4-sruns.sh 2  1000 0.1 0.1 dop2-sa01-se01-n1000
+
+# ... omitted lots of rows ...
+# ... omitted lots of rows ...
+
+\end{verbatim}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Interesting Results}
+  \begin{itemize}
+    \item Control Polygon Reduction vs.\ other model selection tools:
+      \begin{itemize}
+        \item Faster,
+        \item Regression models with as good, or better fits, on a
+          degree-of-freedom for degree-of-freedom comparison.
+      \end{itemize}
+    \item[]
+    \item Want to know more: 
+      \begin{itemize}
+        \item Dissertation defense April 10.
+        \item Control Polygon Reduction,
+        \item Control Net Reduction,
+        \item Software, and
+        \item Clinical inference.
+      \end{itemize}
+  \end{itemize} 
+\end{frame}
+
+\begin{frame}
+  \frametitle{Wish List}
+  \begin{itemize}
+    \item A Testing QOS
+      \begin{itemize}
+        \item At least two Nodes.
+        \item Low wall time.
+        \item High priority use.
+      \end{itemize}
+    \item[]
+    \item Add to the "Getting Started" document
+      \begin{itemize}
+        \item Limits on storage, size and quantity.
+        \item Details on queueing priority.
+      \end{itemize}
+    \item[]
+    \item Community site to hosting examples, Q\&A.
+    \item[]
+    \item Configuration and Testing to minimize cost.
+      \begin{itemize}
+        \item 20 parallel jobs, one core each, or
+        \item 10 parallel jobs, two cores each, or
+        \item 5 parallel jobs, four cores each?
+      \end{itemize}
+  \end{itemize}
+\end{frame}
 \end{document}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % End of file
